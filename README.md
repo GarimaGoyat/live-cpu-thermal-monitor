@@ -71,11 +71,12 @@ server-cpu-temperature-prediction/
 │   └── predict.py
 │
 ├── models/
-│   └── server_temp_model.pkl  # Saved model (created by `src/train_model.py`)
+│   └── server_temp_model.pkl  # Saved model (kept locally; not tracked in git)
 │
 ├── docs/
 │   ├── project_report.md
-│   └── screenshots/  # Add evaluation screenshots here (e.g. results.png)
+│   ├── results.md
+│   └── model_accuracy_report.png  # Evaluation console screenshot
 │
 ├── notebooks/
 │   └── exploration.ipynb
@@ -92,7 +93,6 @@ server-cpu-temperature-prediction/
 - Deep learning-based temperature prediction
 - Cloud deployment and API integration
 
-
 ## 🚀 How to Run the Prediction System
 
 Since the trained model file (`.pkl`) exceeds GitHub's size limit, please follow these steps to run the AI on your local machine:
@@ -108,4 +108,4 @@ Since the trained model file (`.pkl`) exceeds GitHub's size limit, please follow
 5. **Get Predictions**:
    Run `python src/predict.py` to see the AI forecast server temperatures.
 
-Screenshot: Add an evaluation screenshot at `docs/screenshots/results.png` and it will be referenced from `docs/results.md`.
+Screenshot: **Evaluation output screenshot is included** at `docs/model_accuracy_report.png` (already added). See `docs/results.md` and `docs/project_report.md` for the model metrics and evaluation details.
