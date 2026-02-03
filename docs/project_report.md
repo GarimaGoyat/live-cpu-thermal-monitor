@@ -20,6 +20,20 @@ The raw dataset required extensive cleaning to ensure model reliability:
 * **Architecture**: Modular project structure with separate directories for data, models, and source code.
 * **Environment**: Isolated virtual environment (`.venv`) to manage dependencies like Scikit-Learn and Pandas.
 
-### 4. Conclusion
+### 4. Model Training & Evaluation Results
 
-The project successfully bridges the gap between raw hardware metrics and actionable thermal insights. By deploying this predictive model, data centers can implement proactive cooling strategies before critical thresholds are reached.
+- **Train/Test Split**: The dataset is split with `train_test_split(..., test_size=0.2, random_state=42)`. The training script saves the held-out test set to `data/test_set.csv` for reproducible evaluation.
+- **Saved Artifacts**:
+  - Model: `models/server_temp_model.pkl` (saved by `src/train_model.py`)
+  - Test set: `data/test_set.csv`
+- **Evaluation Metrics (on held-out test set)**:
+  - Mean Absolute Error (MAE): **2.33°C**
+  - R² Score: **0.9174**
+
+*Evaluation screenshot:* `docs/model_accuracy_report.png`
+
+![Evaluation Results Screenshot](model_accuracy_report.png)
+
+### 5. Conclusion
+
+The project successfully bridges the gap between raw hardware metrics and actionable thermal insights. By training with a held-out test split and saving the test set for consistent evaluation, the model achieved strong generalization on the held-out set (MAE 2.33°C, R² 0.9174). Next steps include cross-validation, hyperparameter tuning, and adding CI checks to prevent performance regressions.
