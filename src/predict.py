@@ -1,7 +1,7 @@
 import joblib
 import pandas as pd
 
-# 1. Load the "Brain"
+# 1. Load the model
 model = joblib.load('models/server_temp_model.pkl')
 
 # 2. Simulate a high-load server scenario

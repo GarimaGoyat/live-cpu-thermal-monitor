@@ -1,44 +1,59 @@
 import joblib
 import os
 import pandas as pd
-import sys
-from sklearn.metrics import mean_absolute_error, r2_score
+from sklearn.metrics import mean_absolute_error, r2_score, mean_squared_error
 
 model_path = 'models/server_temp_model.pkl'
-if not os.path.exists(model_path):
-    print(f"Error: model file '{model_path}' not found. Run: python src/train_model.py")
-    sys.exit(1)
 
-# 1. Load the trained model (and prefer a saved test set for evaluation)
+if not os.path.exists(model_path):
+    print("Model not found. Run train_model.py first.")
+    exit()
+
+# Load trained model
 model = joblib.load(model_path)
 
-if os.path.exists('data/test_set.csv'):
-    df_test = pd.read_csv('data/test_set.csv')
-    X = df_test[['CPU_Usage', 'CPU_Frequency', 'Memory_Usage', 'Process_Count', 'Thread_Count']]
-    y_actual = df_test['CPU_Temperature']
-else:
-    # fallback: create a fresh random split from cleaned data
-    from sklearn.model_selection import train_test_split
-    df = pd.read_csv('data/cleaned_server_data.csv')
-    X_all = df[['CPU_Usage', 'CPU_Frequency', 'Memory_Usage', 'Process_Count', 'Thread_Count']]
-    y_all = df['CPU_Temperature']
-    X_train, X, y_train, y_actual = train_test_split(X_all, y_all, test_size=0.2, random_state=42)
-    print("Warning: 'data/test_set.csv' not found — using a fresh random split for evaluation.")
+# Load test data
+if not os.path.exists('data/test_set.csv'):
+    print("Test set not found. Run train_model.py first.")
+    exit()
 
-# 3. Get predictions
+df_test = pd.read_csv('data/test_set.csv')
+
+# IMPORTANT: Same feature list used during training
+features = [
+    'CPU_Usage',
+    'CPU_Frequency',
+    'Memory_Usage',
+    'Disk_Usage',
+    'Process_Count',
+    'Thread_Count',
+    'GPU_Temperature',
+    'Ambient_Temperature',
+    'Voltage',
+    'Current_Load',
+    'Prev_CPU_Temperature'
+]
+
+X = df_test[features]
+y_actual = df_test['CPU_Temperature']
+
+# Make predictions
 y_pred = model.predict(X)
 
-# 4. Calculate Accuracy Metrics
+# Metrics
 mae = mean_absolute_error(y_actual, y_pred)
+rmse = mean_squared_error(y_actual, y_pred, squared=False)
 r2 = r2_score(y_actual, y_pred)
 
-print("-" * 30)
-print("📊 MODEL ACCURACY REPORT")
-print("-" * 30)
-print(f"Mean Absolute Error (MAE): {mae:.2f}°C")
-print(f"R2 Score (Accuracy): {r2:.4f}")
-print("-" * 30)
-if r2 > 0.80:
-    print("Result: High Accuracy Model ✅")
+print("-" * 40)
+print("MODEL EVALUATION REPORT")
+print("-" * 40)
+print(f"Mean Absolute Error (MAE): {mae:.2f} °C")
+print(f"Root Mean Squared Error (RMSE): {rmse:.2f} °C")
+print(f"R2 Score: {r2:.4f}")
+print("-" * 40)
+
+if r2 > 0.90:
+    print("High Accuracy Model ✅")
 else:
-    print("Result: Model needs more tuning ⚠️")
+    print("Model may need improvement ⚠️")
