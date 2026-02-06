@@ -42,8 +42,8 @@ X_train, X_test, y_train, y_test = train_test_split(
 # 5. Define models
 models = {
     "Linear Regression": LinearRegression(),
-    "Random Forest": RandomForestRegressor(random_state=42),
-    "Gradient Boosting": GradientBoostingRegressor(random_state=42)
+    "Random Forest": RandomForestRegressor(n_estimators=50, n_jobs=-1, random_state=42),
+    "Gradient Boosting": GradientBoostingRegressor(n_estimators=50, random_state=42)
 }
 
 best_model = None
