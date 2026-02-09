@@ -173,4 +173,4 @@ Test the model with a simulated high-load server scenario.
 - See [USAGE_GUIDE.md](USAGE_GUIDE.md) for **complete step-by-step instructions** on how to run everything ⭐
 - See [docs/project_report.md](docs/project_report.md) for detailed technical implementation
 - See [docs/results.md](docs/results.md) for complete model metrics and comparison analysis
-- See [docs/model_accuracy_report.png](docs/model_accuracy_report.png) for evaluation visualization
+- See [docs/results_scrnshots/model_accuracy_report.png](docs/results_scrnshots/model_accuracy_report.png) for evaluation visualization
