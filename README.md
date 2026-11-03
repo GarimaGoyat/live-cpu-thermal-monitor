@@ -67,15 +67,24 @@ The R², MAE, and RMSE above are held-out values from the supplied dataset. They
 
 ---
 
-## 📈 Machine Learning Models
+## 📈 Academic ML Laboratory Experiments
 
-The system automatically trains and evaluates multiple models, selecting the best performer:
+The original `src/train_model.py` and `models/server_temp_model.pkl` remain the live dashboard contract. The academic experiments use a separate artifact, `models/engineered_model_experiment.pkl`, and never silently replace the live model.
 
-- **Linear Regression** - Baseline model
-- **Random Forest Regressor** - Ensemble method with high accuracy
-- **Gradient Boosting Regressor** - Advanced ensemble approach
+### Preprocessing
 
-**Best Model Selection**: Automatically selects the model with the highest R² score on the held-out test set, combined with cross-validation analysis for robustness.
+- Convert timestamps and numeric columns, sort chronologically, and remove duplicate rows.
+- Keep missing CPU temperature targets out of supervised training; median-impute only input features.
+- Detect constant columns and exclude them from experiments. The supplied CPU frequency column is constant.
+- Inspect, rather than automatically delete, IQR outliers. The bounds are `Q1 - 1.5 * IQR` and `Q3 + 1.5 * IQR`.
+- Demonstrate `MinMaxScaler` (`(x - min) / (max - min)`) and `StandardScaler` (`(x - mean) / standard deviation`). Scaling is used for KNN, SVR, and neural networks, but is unnecessary for tree models.
+- Add previous CPU temperature, past rolling mean, CPU/temperature changes, and an approximately five-minute future target. Past features use `shift(1)` before rolling, so future values do not leak into current rows.
+
+### Regression, classification, and association algorithms
+
+Regression experiments include Simple Linear Regression, Multiple Linear Regression, Random Forest, AdaBoost, KNN, SVR, shallow neural network, deep neural network, and optional PCA comparison. Classification experiments use Random Forest and Gaussian Naive Bayes for `Safe`, `Moderate Risk`, and `High Risk`. A small Apriori implementation mines rules from discretized CPU usage, GPU temperature, and risk.
+
+The current chronological regression run produced test R² values of `0.9426` for Multiple Linear Regression, `0.9424` for the Deep Neural Network, `0.9406` for Random Forest, and `0.7933` for Linear Regression with PCA. These are dataset experiment results, not hardware validation. The chronological classification test window contains no High Risk rows and only 65 Moderate Risk rows, so minority-class recall needs more representative data before strong conclusions are made.
 
 ---
 
@@ -96,6 +105,13 @@ server-cpu-temperature-prediction/
 │   └── test_set.csv  # Saved test split used for evaluation (created by `src/train_model.py`)
 │
 ├── src/
+│   ├── preprocessing.py
+│   ├── eda.py
+│   ├── model_comparison.py
+│   ├── classification.py
+│   ├── association_rules.py
+│   ├── run_experiments.py
+│   ├── data_preprocessing.py  # Original live-model preprocessing
 │   ├── train_model.py
 │   ├── evaluate_model.py
 │   └── predict.py
@@ -146,7 +162,21 @@ python src/evaluate_model.py
 - Reports performance metrics: Mean Absolute Error (MAE), Root Mean Squared Error (RMSE), and R² Score
 - Displays confidence assessment based on R² value
 
-### Step 4: Run Interactive Dashboard
+### Step 4: Run the ML laboratory experiments
+
+```powershell
+python src/run_experiments.py
+```
+
+This runs chronological regression, classification, and Apriori experiments. It writes comparison tables to `data/regression_experiment_results.csv`, `data/classification_experiment_results.csv`, and `data/association_rules.csv`. It also saves the best separate engineered experiment artifact to `models/engineered_model_experiment.pkl`.
+
+To inspect the dataset interactively with histograms, boxplots, correlation heatmap, CPU/temperature scatter plot, and IQR outlier counts:
+
+```powershell
+python src/eda.py
+```
+
+### Step 5: Run Interactive Dashboard
 ```powershell
 streamlit run app.py
 ```
@@ -172,7 +202,7 @@ streamlit run app.py
 
 Enable `Log samples to data/live_monitoring_log.csv` to append timestamps, measured features, predictions, actual temperatures, I/O rates, and risk labels. This file is separate from `data/server_temperature_data.csv`.
 
-### Step 5: Command-Line Predictions (Optional)
+### Step 6: Command-Line Predictions (Optional)
 ```powershell
 python src/predict.py
 ```
