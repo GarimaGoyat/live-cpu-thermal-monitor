@@ -72,7 +72,7 @@ except FileNotFoundError:
 
 with st.sidebar:
     st.header("Model and risk")
-    st.caption("R² = 0.9528, MAE = 1.81 °C, and RMSE = 2.40 °C are held-out dataset metrics, not validated hardware accuracy.")
+    st.caption("Run `python src/evaluate_model.py` for current held-out metrics. Results are dataset metrics, not validated hardware accuracy.")
     st.markdown("- Safe: < 70 °C\n- Moderate Risk: 70 to < 80 °C\n- High Risk: >= 80 °C")
     mode = st.radio("Mode", ["Manual Prediction", "Live Monitoring"])
 

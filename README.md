@@ -1,23 +1,25 @@
-# Server CPU Temperature Prediction
+# Live CPU Thermal Monitor
 
-## 📌 Problem Statement
+This project predicts CPU temperature from workload, hardware, and thermal features, then presents the result in a Streamlit dashboard. It supports both manual what-if predictions and optional Windows live monitoring through `psutil` and LibreHardwareMonitor.
 
-Large-scale computing infrastructure such as cloud data centers face overheating risks due to high workloads and environmental conditions. Predicting server CPU temperature in advance can help in proactive cooling management and failure prevention.
+The repository contains two related workflows:
 
-This project builds a supervised machine learning regression model to estimate CPU temperature based on system workload and environmental parameters.
+- **Live prediction workflow**: `src/train_model.py`, `src/evaluate_model.py`, `src/predict.py`, and `app.py`. This workflow uses the 11-feature model saved as `models/server_temp_model.pkl`.
+- **ML laboratory workflow**: `src/run_experiments.py`. This separately evaluates regression, classification, and association-rule experiments and writes their result tables to `data/`.
 
 ---
 
-## 🎯 Model Performance
+## Model Performance
 
-**Achieved Results:**
-- **R² Score**: 0.9528 (explains 95.28% of temperature variance) ✅
-- **Mean Absolute Error (MAE)**: 1.81°C (excellent accuracy) ✅
-- **Root Mean Squared Error (RMSE)**: 2.40°C (tight error bounds) ✅
-- **Best Model**: Random Forest Regressor (auto-selected)
-- **Status**: Dataset-validated prototype; real-world hardware accuracy is not yet established
+The current live training pipeline compares Linear Regression, Random Forest, and Gradient Boosting, then selects the model with the highest held-out test $R^2$. The reproducible run in this repository selects **Random Forest**:
 
-The R², MAE, and RMSE above are held-out values from the supplied dataset. They must not be interpreted as real-world accuracy until predictions are validated against actual hardware temperature measurements.
+| Metric | Held-out test result |
+| --- | ---: |
+| $R^2$ | 0.9528 |
+| MAE | 1.81 deg C |
+| RMSE | 2.40 deg C |
+
+The 5-fold cross-validation mean $R^2$ values are 0.8696 (Linear Regression), 0.8697 (Random Forest), and 0.8849 (Gradient Boosting). Cross-validation is reported for comparison, but it does not currently control model selection. These are dataset metrics, not validated hardware accuracy.
 
 ---
 
@@ -30,23 +32,23 @@ The R², MAE, and RMSE above are held-out values from the supplied dataset. They
 - Disk Usage (%)
 - Process Count
 - Thread Count
-- GPU Temperature (°C)
-- Previous CPU Temperature (°C) - Captures thermal inertia
+- GPU Temperature (deg C)
+- Previous CPU Temperature (deg C) - Captures thermal inertia
 
 **Synthetic (Engineered) Features:**
-- Ambient Temperature (°C) - Simulated with sinusoidal variation
+- Ambient Temperature (deg C) - Simulated with sinusoidal variation
 - Voltage (V) - Constant 12V assumption
-- Current Load (A) - Derived from CPU utilization (CPU_Usage × 0.1)
+- Current Load (A) - Derived from CPU utilization (CPU_Usage x 0.1)
 
-## 🎯 Target Variable
+## Target Variable
 
-- CPU Temperature (°C)
+- CPU Temperature (deg C)
 
 ---
 
-## 🛠️ Tech Stack
+## Tech Stack
 
-- Python 3.12
+- Python 3.10+
 - Pandas & NumPy (data processing)
 - Scikit-learn (machine learning)
 - Joblib (model serialization)
@@ -55,15 +57,13 @@ The R², MAE, and RMSE above are held-out values from the supplied dataset. They
 
 ---
 
-## ⚙️ Project Workflow
+## Workflow
 
-1. **Data Preprocessing**: Raw data cleaning, handling missing values, and feature engineering
-2. **Feature Engineering**: Synthetic parameter generation for environmental and thermal factors
-3. **Model Training**: Multi-model training and automatic best model selection
-4. **Model Evaluation**: Comparison using MAE, RMSE, R², and cross-validation
-5. **Interactive Dashboard**: Real-time predictions with risk classification
-6. **Temperature Risk Classification**: Proactive cooling decisions
-7. **Live Windows Monitoring**: Measured resource telemetry and optional hardware temperatures
+1. `src/data_preprocessing.py` removes duplicates and missing rows and creates ambient temperature, voltage, current load, and previous CPU temperature features.
+2. `src/train_model.py` trains three regressors, reports test and cross-validation $R^2$, selects the best test score, and saves the model plus test set.
+3. `src/evaluate_model.py` evaluates the saved artifact using MAE, RMSE, and $R^2$.
+4. `app.py` provides manual predictions, risk labels, and optional Windows telemetry with prediction history.
+5. `src/run_experiments.py` runs the separate chronological regression, classification, and Apriori experiments.
 
 ---
 
@@ -84,85 +84,61 @@ The original `src/train_model.py` and `models/server_temp_model.pkl` remain the 
 
 Regression experiments include Simple Linear Regression, Multiple Linear Regression, Random Forest, AdaBoost, KNN, SVR, shallow neural network, deep neural network, and optional PCA comparison. Classification experiments use Random Forest and Gaussian Naive Bayes for `Safe`, `Moderate Risk`, and `High Risk`. A small Apriori implementation mines rules from discretized CPU usage, GPU temperature, and risk.
 
-The current chronological regression run produced test R² values of `0.9426` for Multiple Linear Regression, `0.9424` for the Deep Neural Network, `0.9406` for Random Forest, and `0.7933` for Linear Regression with PCA. These are dataset experiment results, not hardware validation. The chronological classification test window contains no High Risk rows and only 65 Moderate Risk rows, so minority-class recall needs more representative data before strong conclusions are made.
+The current chronological regression run ranks Multiple Linear Regression first at $R^2=0.9426$, followed by Deep Neural Network at 0.9424 and Random Forest at 0.9406. The classification output reports 0.9884 accuracy and 0.9827 F1 for both Random Forest and Naive Bayes on the saved test window. The test window has limited minority-class representation, so these results should not be treated as production risk-detection validation. The association-rule output is descriptive, not a causal cooling policy.
 
 ---
 
 ## 🚨 Proactive Cooling Logic
 
-- **Safe**: Temperature < 70°C
-- **Moderate Risk**: 70–80°C
-- **High Risk**: > 80°C
+- **Safe**: Temperature < 70 deg C
+- **Moderate Risk**: 70 to < 80 deg C
+- **High Risk**: >= 80 deg C
 
 ---
 
-## 📁 Project Structure
+## Project Structure
 
-server-cpu-temperature-prediction/
-│
-├── data/
-│   ├── server_temperature_data.csv
-│   └── test_set.csv  # Saved test split used for evaluation (created by `src/train_model.py`)
-│
-├── src/
-│   ├── preprocessing.py
-│   ├── eda.py
-│   ├── model_comparison.py
-│   ├── classification.py
-│   ├── association_rules.py
-│   ├── run_experiments.py
-│   ├── data_preprocessing.py  # Original live-model preprocessing
-│   ├── train_model.py
-│   ├── evaluate_model.py
-│   └── predict.py
-│
-├── models/
-│   └── server_temp_model.pkl  # Saved model (kept locally; not tracked in git)
-│
-├── data/cleaned_server_data.csv
-├── README.md
-└── requirements.txt
+live-cpu-thermal-monitor/
+├── app.py                              # Streamlit dashboard
+├── data/                               # Source data and generated experiment outputs
+├── models/server_temp_model.pkl        # Live dashboard model
+├── models/engineered_model_experiment.pkl
+├── src/                                # Training, evaluation, monitoring, and experiments
+├── requirements.txt
+└── README.md
 
-> Note: `models/server_temp_model.pkl` and `data/test_set.csv` are generated locally by running `python src/train_model.py`.
+`models/server_temp_model.pkl`, `models/engineered_model_experiment.pkl`, and the CSV outputs are generated artifacts. The live model is committed for convenience, but GitHub warns that it is approximately 94 MB; Git LFS is recommended for future model versions.
 
-## 🔮 Future Scope
+## Limitations and Next Steps
 
-- Real-time server monitoring integration
-- Deep learning-based temperature prediction
-- Cloud deployment and API integration
+- Ambient temperature and voltage are synthetic/operator-provided inputs in the live model.
+- Live prediction requires a previous CPU temperature sample and a GPU temperature reading from LibreHardwareMonitor.
+- Dataset performance does not establish accuracy on unseen hardware.
+- Improve temporal validation, collect representative high-risk samples, and validate against calibrated hardware sensors before operational use.
 
-## 🚀 How to Run the Prediction System
+## Run the Project
 
 Since the trained model file (`.pkl`) exceeds GitHub's size limit, please follow these steps to run the AI on your local machine:
 
-### Step 1: Setup Environment
+### 1. Create the environment
 ```powershell
 .\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
 ```
 
-### Step 2: Train the Model (Run Once)
+### 2. Train the live model
 ```powershell
 python src/train_model.py
 ```
-**What this does:**
-- Preprocesses raw data from `data/server_temperature_data.csv`
-- Generates synthetic features (Ambient Temperature, Voltage, Current Load, Previous CPU Temperature)
-- Trains and compares three models: Linear Regression, Random Forest, and Gradient Boosting
-- **Automatically selects the best model** based on R² score and cross-validation analysis
-- Saves the best model to `models/server_temp_model.pkl`
-- Saves the held-out test set to `data/test_set.csv` for reproducible evaluation
+This preprocesses `data/server_temperature_data.csv`, compares three models by held-out test $R^2$, saves the selected model to `models/server_temp_model.pkl`, and writes `data/test_set.csv`.
 
-### Step 3: Evaluate the Model
+### 3. Evaluate the live model
 ```powershell
 python src/evaluate_model.py
 ```
-**What this does:**
-- Evaluates the saved model on the held-out test set (`data/test_set.csv`)
-- Reports performance metrics: Mean Absolute Error (MAE), Root Mean Squared Error (RMSE), and R² Score
-- Displays confidence assessment based on R² value
+This evaluates the saved model against `data/test_set.csv` and prints MAE, RMSE, and $R^2$.
 
-### Step 4: Run the ML laboratory experiments
+### 4. Run the ML laboratory experiments
 
 ```powershell
 python src/run_experiments.py
@@ -176,15 +152,11 @@ To inspect the dataset interactively with histograms, boxplots, correlation heat
 python src/eda.py
 ```
 
-### Step 5: Run Interactive Dashboard
+### 5. Run the dashboard
 ```powershell
 streamlit run app.py
 ```
-**Features:**
-- **Interactive Input Controls**: Sliders and number inputs for all 11 features
-- **Real-time Predictions**: Instant temperature predictions as you adjust parameters
-- **Risk Classification**: Visual alerts for safe, moderate risk, and high-risk temperature zones
-- **Live Monitoring**: Select `Live Monitoring` in the sidebar for 2–5 second Windows refreshes
+The dashboard offers manual predictions for all 11 model inputs, three temperature risk zones, measured CPU/memory/disk/process/thread telemetry, optional CPU/GPU sensor readings, a rolling temperature chart, and optional CSV logging.
 
 ### Live Windows Monitoring
 
@@ -192,9 +164,8 @@ Install and run [LibreHardwareMonitor](https://github.com/LibreHardwareMonitor/L
 
 The live collector uses `psutil` for CPU utilization, memory, current CPU frequency, disk capacity, process count, thread count, disk I/O rates, and network rates. Disk and network rates are display-only. The model's `Disk_Usage` remains disk capacity percentage to match the original dataset. Ambient temperature and voltage are explicitly entered in the sidebar because the original training pipeline synthesized them. Current load remains `CPU_Usage * 0.1`, matching training. Prediction begins after a GPU reading and a previous CPU-temperature sample are available.
 
-To install the live-monitoring dependencies and launch the app:
+To install the live-monitoring dependencies and launch the app from this repository:
 ```powershell
-cd D:\ML_PROJECT\server-thermal-intelligence\live-cpu-thermal-monitor
 .\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
 streamlit run app.py
@@ -202,9 +173,9 @@ streamlit run app.py
 
 Enable `Log samples to data/live_monitoring_log.csv` to append timestamps, measured features, predictions, actual temperatures, I/O rates, and risk labels. This file is separate from `data/server_temperature_data.csv`.
 
-### Step 6: Command-Line Predictions (Optional)
+### 6. Command-line prediction (optional)
 ```powershell
 python src/predict.py
 ```
-Test the model with a simulated high-load server scenario.
+This tests the saved model with a simulated high-load server scenario.
 
