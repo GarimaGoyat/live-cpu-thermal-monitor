@@ -4,3 +4,8 @@ scikit-learn
 matplotlib
 seaborn
 joblib
+psutil
+streamlit
+streamlit-autorefresh
+WMI
+pywin32

@@ -15,7 +15,9 @@ This project builds a supervised machine learning regression model to estimate C
 - **Mean Absolute Error (MAE)**: 1.81°C (excellent accuracy) ✅
 - **Root Mean Squared Error (RMSE)**: 2.40°C (tight error bounds) ✅
 - **Best Model**: Random Forest Regressor (auto-selected)
-- **Status**: Production Ready ✅
+- **Status**: Dataset-validated prototype; real-world hardware accuracy is not yet established
+
+The R², MAE, and RMSE above are held-out values from the supplied dataset. They must not be interpreted as real-world accuracy until predictions are validated against actual hardware temperature measurements.
 
 ---
 
@@ -61,6 +63,7 @@ This project builds a supervised machine learning regression model to estimate C
 4. **Model Evaluation**: Comparison using MAE, RMSE, R², and cross-validation
 5. **Interactive Dashboard**: Real-time predictions with risk classification
 6. **Temperature Risk Classification**: Proactive cooling decisions
+7. **Live Windows Monitoring**: Measured resource telemetry and optional hardware temperatures
 
 ---
 
@@ -99,14 +102,6 @@ server-cpu-temperature-prediction/
 │
 ├── models/
 │   └── server_temp_model.pkl  # Saved model (kept locally; not tracked in git)
-│
-├── docs/
-│   ├── project_report.md
-│   ├── results.md
-│   └── model_accuracy_report.png  # Evaluation console screenshot
-│
-├── notebooks/
-│   └── exploration.ipynb
 │
 ├── data/cleaned_server_data.csv
 ├── README.md
@@ -159,7 +154,23 @@ streamlit run app.py
 - **Interactive Input Controls**: Sliders and number inputs for all 11 features
 - **Real-time Predictions**: Instant temperature predictions as you adjust parameters
 - **Risk Classification**: Visual alerts for safe, moderate risk, and high-risk temperature zones
-- **Environmental Simulation**: Included simulated ambient conditions for realistic scenarios
+- **Live Monitoring**: Select `Live Monitoring` in the sidebar for 2–5 second Windows refreshes
+
+### Live Windows Monitoring
+
+Install and run [LibreHardwareMonitor](https://github.com/LibreHardwareMonitor/LibreHardwareMonitor) as an administrator, enable its WMI interface, and leave it running. The dashboard reads CPU and GPU temperature sensors through `root\\LibreHardwareMonitor`; unavailable sensors are shown as unavailable and are never fabricated.
+
+The live collector uses `psutil` for CPU utilization, memory, current CPU frequency, disk capacity, process count, thread count, disk I/O rates, and network rates. Disk and network rates are display-only. The model's `Disk_Usage` remains disk capacity percentage to match the original dataset. Ambient temperature and voltage are explicitly entered in the sidebar because the original training pipeline synthesized them. Current load remains `CPU_Usage * 0.1`, matching training. Prediction begins after a GPU reading and a previous CPU-temperature sample are available.
+
+To install the live-monitoring dependencies and launch the app:
+```powershell
+cd D:\ML_PROJECT\server-thermal-intelligence\live-cpu-thermal-monitor
+.\.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+streamlit run app.py
+```
+
+Enable `Log samples to data/live_monitoring_log.csv` to append timestamps, measured features, predictions, actual temperatures, I/O rates, and risk labels. This file is separate from `data/server_temperature_data.csv`.
 
 ### Step 5: Command-Line Predictions (Optional)
 ```powershell
@@ -167,10 +178,3 @@ python src/predict.py
 ```
 Test the model with a simulated high-load server scenario.
 
----
-
-**Documentation References:**
-- See [USAGE_GUIDE.md](USAGE_GUIDE.md) for **complete step-by-step instructions** on how to run everything ⭐
-- See [docs/project_report.md](docs/project_report.md) for detailed technical implementation
-- See [docs/results.md](docs/results.md) for complete model metrics and comparison analysis
-- See [docs/results_scrnshots/model_accuracy_report.png](docs/results_scrnshots/model_accuracy_report.png) for evaluation visualization
